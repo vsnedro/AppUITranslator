@@ -1,0 +1,39 @@
+﻿[FileInfo]
+LanguageID=1031
+LanguageName=Deutsch
+
+[Main]
+0=Hauptfenster
+100=Datei
+110=Neu
+111=Neues Dokument erstellen
+120=Öffnen
+121=Dokument öffnen
+130=Speichern
+131=Dokument speichern
+150=Verlassen
+200=Optionen
+210=Konfiguration
+211=Anwendungseinstellungen
+220=Sprache
+300=Hilfe
+310=Inhalt
+311=Hilfeinhalte anzeigen
+320=Über
+1101=Kunde
+1102=Vorname
+1103=Familienname
+1104=Telefon
+1105=E-mail
+1201=Auftrag
+1202=Nummer
+1203=Datum
+1204=Kosten
+1205=Kommentar
+1301=Vorschau
+1401=Drucken
+
+[About]
+0=Über
+2=Dies ist eine Demoanwendung mit einem Beispiel für die Übersetzung der Benutzeroberfläche der Anwendung.
+3=Schließen

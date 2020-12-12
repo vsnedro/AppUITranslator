@@ -1,0 +1,39 @@
+﻿[FileInfo]
+LanguageID=1033
+LanguageName=English
+
+[Main]
+0=Main window
+100=File
+110=New
+111=Create new document
+120=Open
+121=Open document
+130=Save
+131=Save document
+150=Exit
+200=Options
+210=Configuration
+211=Application settings
+220=Language
+300=Help
+310=Contents
+311=Show help contents
+320=About
+1101=Customer
+1102=First name
+1103=Last name
+1104=Phone
+1105=E-mail
+1201=Order
+1202=Number
+1203=Date
+1204=Cost
+1205=Comment
+1301=Preview
+1401=Print
+
+[About]
+0=About
+2=This is a demo application with an example of translating the application's user interface.
+3=Close
