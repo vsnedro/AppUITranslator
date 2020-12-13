@@ -1,0 +1,14 @@
+/__history
+/__recovery
+/Win32
+/Debug
+/Release
+*.dcu
+*.dof
+*.dproj.local
+*.identcache
+*.res
+*.rsm
+*.stat
+*.tvsconfig
+*.ini
