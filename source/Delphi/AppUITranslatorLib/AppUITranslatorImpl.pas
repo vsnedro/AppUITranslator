@@ -5,24 +5,23 @@ interface
 uses
   {VCL}
   System.Classes,
-  System.SysUtils,
   System.Generics.Collections,
   {App}
   AppUITranslatorIntf;
 
 type
   /// <summary>
-  /// App UI translation file
+  /// App UI language file
   /// </summary>
-  TAppUITranslationFile = class(TInterfacedObject, IAppUITranslationFile)
+  TAppUILanguageFile = class(TInterfacedObject, IAppUILanguage, IAppUILanguageFile)
   strict private
     /// <summary> Language identifier </summary>
     FLanguageID: integer;
     /// <summary> Language name </summary>
     FLanguageName: string;
-    /// <summary> Full path to translation file </summary>
+    /// <summary> Full path to language file </summary>
     FFullPath: string;
-  private
+  public
     function GetLanguageID(): integer;
     function GetLanguageName(): string;
     function GetFullPath(): string;
@@ -30,7 +29,7 @@ type
     /// <summary> Constructor </summary>
     /// <param name="ALanguageID"> Language identifier <see cref="T:integer"/> </param>
     /// <param name="ALanguageName"> Language name <see cref="T:string"/> </param>
-    /// <param name="AFullPath"> Full path to translation file <see cref="T:string"/> </param>
+    /// <param name="AFullPath"> Full path to language file <see cref="T:string"/> </param>
     constructor Create(
       const ALanguageID  : integer;
       const ALanguageName: string;
@@ -41,22 +40,36 @@ type
   /// <summary>
   /// App UI translation source finder
   /// </summary>
-  TAppUITranslationFileFinder = class(TInterfacedObject, IAppUITranslationFileFinder)
-  private
-    /// <summary> Find App UI translation files </summary>
-    /// <param name="APath"> File search directory <see cref="T:string"/> </param>
-    /// <param name="AMask"> File name mask <see cref="T:string"/> </param>
+  TAppUILanguageFileFinder = class(TInterfacedObject, IAppUILanguageFileFinder)
+  strict private
+  const
+    /// <summary> Default file search directory </summary>
+    CDefaultFilePath = 'Languages';
+    /// <summary> Default file name mask </summary>
+    CDefaultFileMask = '*.lng';
+  public
+    /// <summary> Find App UI language files </summary>
+    function Find(): TArray<IAppUILanguageFile>; overload;
+    /// <summary> Find App UI language files </summary>
+    /// <param name="AFilePath"> File search directory <see cref="T:string"/> </param>
+    /// <param name="AFileMask"> File name mask <see cref="T:string"/> </param>
     function Find(
-      const APath: String;
-      const AMask: String): TArray<IAppUITranslationFile>;
+      const AFilePath: String;
+      const AFileMask: String): TArray<IAppUILanguageFile>; overload;
   end;
 
 type
   /// <summary>
   /// App UI default translation
   /// </summary>
-  TAppUITranslationDefault = class(TInterfacedObject, IAppUITranslation)
+  TAppUITranslationCustom = class abstract(TInterfacedObject, IAppUITranslation)
+  strict private
+    /// <summary> Language identifier </summary>
+    FLanguageID: integer;
   private
+    /// <summary> Get language identifier </summary>
+    function GetLanguageID(): integer;
+  public
     /// <summary> Get text value for UI element </summary>
     /// <param name="ASection"> Section name <see cref="T:string"/> </param>
     /// <param name="AId"> UI element identifier <see cref="T:string"/> </param>
@@ -64,17 +77,38 @@ type
     function GetText(
       const ASection: string;
       const AId     : string;
-      const ADefault: string = ''): string;
+      const ADefault: string = ''): string; virtual; abstract;
+  public
+    /// <summary> Constructor </summary>
+    /// <param name="ALanguageID"> Language identifier <see cref="T:integer"/> </param>
+    constructor Create(
+      const ALanguageID: integer);
+  end;
+
+type
+  /// <summary>
+  /// App UI default translation
+  /// </summary>
+  TAppUITranslationDefault = class(TAppUITranslationCustom)
+  public
+    /// <summary> Get text value for UI element </summary>
+    /// <param name="ASection"> Section name <see cref="T:string"/> </param>
+    /// <param name="AId"> UI element identifier <see cref="T:string"/> </param>
+    /// <param name="ADefault"> Default text value <see cref="T:string"/> </param>
+    function GetText(
+      const ASection: string;
+      const AId     : string;
+      const ADefault: string = ''): string; override;
   end;
 
 type
   /// <summary>
   /// App UI translation
   /// </summary>
-  TAppUITranslation = class(TInterfacedObject, IAppUITranslation)
+  TAppUITranslation = class(TAppUITranslationCustom)
   strict private
     FDictionary: TDictionary<string, TDictionary<string, string>>;
-  private
+  public
     /// <summary> Get text value for UI element </summary>
     /// <param name="ASection"> Section name <see cref="T:string"/> </param>
     /// <param name="AId"> UI element identifier <see cref="T:string"/> </param>
@@ -82,11 +116,13 @@ type
     function GetText(
       const ASection: string;
       const AId     : string;
-      const ADefault: string = ''): string;
+      const ADefault: string = ''): string; override;
   public
     /// <summary> Constructor </summary>
+    /// <param name="ALanguageID"> Language identifier <see cref="T:integer"/> </param>
     /// <param name="ADictionary"> Dictionary that allows to get a collection of text values for a given section <see cref="T:TDictionary"/> </param>
     constructor Create(
+      const ALanguageID: integer;
       const ADictionary: TDictionary<string, TDictionary<string, string>>);
     /// <summary> Destructor </summary>
     destructor Destroy(); override;
@@ -94,88 +130,81 @@ type
 
 type
   /// <summary>
-  /// App UI translation reader
+  /// App UI translation loader
   /// </summary>
-  TAppUITranslationReader = class(TInterfacedObject, IAppUITranslationReader)
+  TAppUITranslationLoader = class(TInterfacedObject, IAppUITranslationLoader)
   strict private
-    FFileName: string;
-    FStream: TStream;
-    FEncoding: TEncoding;
+    /// <summary> Loads a translation from a stream </summary>
+    function LoadTranslation(
+      const AStream: TStream): IAppUITranslation;
+  public
+    /// <summary> Loads a translation from a file </summary>
+    function LoadFromFile(
+      const AFileName: string): IAppUITranslation;
+    /// <summary> Loads a translation from a stream </summary>
+    function LoadFromStream(
+      const AStream: TStream): IAppUITranslation;
+  end;
+
+type
+  /// <summary>
+  /// App UI translation API
+  /// </summary>
+  TAppUITranslationApi = class(TInterfacedObject, IAppUITranslationApi)
+  strict private
+  const
+    /// <summary> Default language identifier </summary>
+    CDefaultLangID = 1033;
+  strict private
+    /// <summary> App UI translation loader </summary>
+    FLoader: IAppUITranslationLoader;
+    /// <summary> List of App UI language files </summary>
+    FLangFiles: TArray<IAppUILanguageFile>;
+    /// <summary> Current App UI translation </summary>
+    FTranslation: IAppUITranslation;
   private
-    /// <summary> Read App UI translation </summary>
-    function Read(): IAppUITranslation;
+    /// <summary> Get list of available languages for translating the App UI </summary>
+    function GetLanguages(): TArray<IAppUILanguageFile>;
+    /// <summary> Get current App UI translation </summary>
+    function GetTranslation(): IAppUITranslation;
+  public
+    /// <summary> Set App UI translation by language identifier </summary>
+    /// <param name="ALanguageID"> Language identifier <see cref="T:integer"/> </param>
+    procedure SetLanguage(
+      const ALanguageID: integer);
   public
     /// <summary> Constructor </summary>
+    /// <param name="AFileFinder"> App UI language file finder <see cref="T:IAppUILanguageFileFinder"/> </param>
+    /// <param name="ALoader"> App UI translation loader <see cref="T:IAppUITranslationLoader"/> </param>
     constructor Create(
-      const AFileName: string); overload;
-    /// <summary> Constructor </summary>
-    constructor Create(
-      const AFileName: string; 
-      const AEncoding: TEncoding); overload;
-    /// <summary> Constructor </summary>
-    constructor Create(
-      const AStream: TStream); overload; virtual;
-    /// <summary> Constructor </summary>
-    constructor Create(
-      const AStream  : TStream;
-      const AEncoding: TEncoding); overload; virtual;
+      const AFileFinder: IAppUILanguageFileFinder;
+      const ALoader    : IAppUITranslationLoader);
     /// <summary> Destructor </summary>
     destructor Destroy(); override;
   end;
 
 type
   /// <summary>
-  /// App UI element
+  /// App UI translation API Factory
   /// </summary>
-  TAppUIElement = class(TInterfacedObject, IAppUIElement)
-  strict private
-    /// <summary> Section name </summary>
-    FSection: string;
-    /// <summary> Identifier </summary>
-    FId: string;
-    /// <summary> Text value </summary>
-    FText: string;
-  private
-    function GetSection(): string;
-    function GetId(): string;
-    function GetText(): string;
-    procedure SetText(const value: string);
+  TAppUITranslationApiFactory = class(TInterfacedObject, IAppUITranslationApiFactory)
   public
-    /// <summary> Constructor </summary>
-    /// <param name="ASection"> Section name <see cref="T:string"/> </param>
-    /// <param name="AId"> Identifier <see cref="T:string"/> </param>
-    /// <param name="AText"> Text value <see cref="T:string"/> </param>
-    constructor Create(
-      const ASection: string;
-      const AId     : string;
-      const AText   : string);
-  end;
-
-type
-  /// <summary>
-  /// App UI translator
-  /// </summary>
-  TAppUITranslator = class(TInterfacedObject, IAppUITranslator)
-  private
-    /// <summary> Translate App UI </summary>
-    /// <param name="AView"> App UI view to translate <see cref="T:IAppUIView"/> </param>
-    /// <param name="ATranslation"> Translation for UI view <see cref="T:IAppUITranslation"/> </param>
-    procedure Translate(
-      const AView       : IAppUIView;
-      const ATranslation: IAppUITranslation);
+    /// <summary> Create instance of App UI translation API </summary>
+    function CreateApi(): IAppUITranslationApi;
   end;
 
 implementation
 
 uses
+  System.SysUtils,
   System.IniFiles;
 
 {------------------------------------------------------------------------------}
-{ TAppUITranslationFile }
+{ TAppUILanguageFile }
 {------------------------------------------------------------------------------}
 
 /// <summary> Constructor </summary>
-constructor TAppUITranslationFile.Create(
+constructor TAppUILanguageFile.Create(
   const ALanguageID  : integer;
   const ALanguageName: string;
   const AFullPath    : string);
@@ -187,49 +216,53 @@ begin
   FFullPath     := AFullPath;
 end;
 
-function TAppUITranslationFile.GetLanguageID(): integer;
+function TAppUILanguageFile.GetLanguageID(): integer;
 begin
   Result := FLanguageID;
 end;
 
-function TAppUITranslationFile.GetLanguageName(): string;
+function TAppUILanguageFile.GetLanguageName(): string;
 begin
   Result := FLanguageName;
 end;
 
-function TAppUITranslationFile.GetFullPath(): string;
+function TAppUILanguageFile.GetFullPath(): string;
 begin
   Result := FFullPath;
 end;
 
 {------------------------------------------------------------------------------}
-{ TAppUITranslationFileFinder }
+{ TAppUILanguageFileFinder }
 {------------------------------------------------------------------------------}
 
-/// <summary> Find App UI translation files </summary>
-function TAppUITranslationFileFinder.Find(
-  const APath: String;
-  const AMask: String): TArray<IAppUITranslationFile>;
+/// <summary> Find App UI language files </summary>
+function TAppUILanguageFileFinder.Find(): TArray<IAppUILanguageFile>;
+begin
+  Result := Find(CDefaultFilePath, CDefaultFileMask);
+end;
+
+/// <summary> Find App UI language files </summary>
+function TAppUILanguageFileFinder.Find(
+  const AFilePath: String;
+  const AFileMask: String): TArray<IAppUILanguageFile>;
 var
   searchRec: TSearchRec;
 begin
-  var files := TList<IAppUITranslationFile>.Create();
+  var files := TList<IAppUILanguageFile>.Create();
   try
-    var filePath := IncludeTrailingPathDelimiter(APath);
-    var findRes  := FindFirst(filePath + AMask, faAnyFile, {var}searchRec);
+    var filePath := IncludeTrailingPathDelimiter(AFilePath);
+    var findRes  := FindFirst(filePath + AFileMask, faAnyFile, {var}searchRec);
     try
       while (findRes = 0) do
       begin
         // read the header of the found file
         var ini := TMemIniFile.Create(filePath + searchRec.Name);
         try
-          var section  := 'FileInfo';
-          var langID   := ini.ReadInteger(section, 'LanguageID', 0);
-          var langName := ini.ReadString (section, 'LanguageName', '');
-
-          if (langID > 0) and (langName.Length > 0) then
+          var langID   := ini.ReadInteger('FileInfo', 'LanguageID', 0);
+          var langName := ini.ReadString ('FileInfo', 'LanguageName', '');
+          if (langID > 0) then
           begin
-            var file_ := TAppUITranslationFile.Create(
+            var file_ := TAppUILanguageFile.Create(
               langID, langName, filePath + searchRec.Name);
             files.Add(file_);
           end;
@@ -247,6 +280,25 @@ begin
   except
     FreeAndNil(files);
   end;
+end;
+
+{------------------------------------------------------------------------------}
+{ TAppUITranslationCustom }
+{------------------------------------------------------------------------------}
+
+/// <summary> Constructor </summary>
+constructor TAppUITranslationCustom.Create(
+  const ALanguageID: integer);
+begin
+  inherited Create();
+
+  FLanguageID := ALanguageID;
+end;
+
+/// <summary> Get language identifier </summary>
+function TAppUITranslationCustom.GetLanguageID(): integer;
+begin
+  Result := FLanguageID;
 end;
 
 {------------------------------------------------------------------------------}
@@ -268,13 +320,14 @@ end;
 
 /// <summary> Constructor </summary>
 constructor TAppUITranslation.Create(
+  const ALanguageID: integer;
   const ADictionary: TDictionary<string, TDictionary<string, string>>);
 begin  
-  inherited Create();
+  inherited Create(ALanguageID);
 
   if not Assigned(ADictionary) then
     raise EArgumentNilException.Create('ADictionary');
-  
+
   FDictionary := ADictionary;
 end;
 
@@ -301,98 +354,68 @@ begin
 end;
 
 {------------------------------------------------------------------------------}
-{ TAppUITranslationReader }
+{ TAppUITranslationLoader }
 {------------------------------------------------------------------------------}
 
-/// <summary> Constructor </summary>
-constructor TAppUITranslationReader.Create(
-  const AFileName: string);
+/// <summary> Loads a translation from a file </summary>
+function TAppUITranslationLoader.LoadFromFile(
+  const AFileName: string): IAppUITranslation;
 begin
-  Create(AFileName, nil);
+  var stream := TMemoryStream.Create();
+  try
+    stream.LoadFromFile(AFileName);
+    Result := LoadFromStream(stream);
+  finally
+    FreeAndNil(stream);
+  end;
 end;
 
-/// <summary> Constructor </summary>
-constructor TAppUITranslationReader.Create(
-  const AFileName: string;
-  const AEncoding: TEncoding);
+/// <summary> Loads a translation from a stream </summary>
+function TAppUITranslationLoader.LoadFromStream(
+  const AStream: TStream): IAppUITranslation;
 begin
-  inherited Create();
-
-  if (AFileName.Length <= 0) then
-    raise EArgumentNilException.Create('AFileName');
-
-  FFileName := AFileName;
-  FEncoding := AEncoding;
-end;
-  
-/// <summary> Constructor </summary>
-constructor TAppUITranslationReader.Create(
-  const AStream: TStream);
-begin
-  Create(AStream, nil);
-end;
-  
-/// <summary> Constructor </summary>
-constructor TAppUITranslationReader.Create(
-  const AStream  : TStream;
-  const AEncoding: TEncoding);  
-begin
-  inherited Create();
-
-  FStream   := AStream;
-  FEncoding := AEncoding;
-end;
-  
-/// <summary> Destructor </summary>
-destructor TAppUITranslationReader.Destroy(); 
-begin
-  FreeAndNil(FStream);
-  FreeAndNil(FEncoding);
-
-  inherited Destroy();
+  Result := LoadTranslation(AStream);
 end;
 
-/// <summary> Read App UI translation </summary>
-function TAppUITranslationReader.Read(): IAppUITranslation;
+/// <summary> Loads a translation from a stream </summary>
+function TAppUITranslationLoader.LoadTranslation(
+  const AStream: TStream): IAppUITranslation;
 begin
+  var languageID: integer := 0;
+
   var dict := TDictionary<string, TDictionary<string, string>>.Create();
   try
-    if (not Assigned(FStream)) then
-      if (FileExists(FFileName)) then
-        FStream := TFileStream.Create(FFileName, fmOpenRead);
+    var ini := TMemIniFile.Create(AStream);
+    try
+      languageID := ini.ReadInteger('FileInfo', 'LanguageID', 0);
 
-    if (Assigned(FStream)) then
-    begin
-      var ini := TMemIniFile.Create(FStream, FEncoding);
+      // read all sections
+      var sections := TStringList.Create();
       try
-        // read all sections
-        var sections := TStringList.Create();
+        ini.ReadSections(sections);
+        var strings := TStringList.Create();
         try
-          ini.ReadSections(sections);
-          var strings := TStringList.Create();
-          try
-            // read values form each section
-            for var i := 0 to sections.Count - 1 do
-            begin
-              ini.ReadSectionValues(sections[i], strings);
-              var dictValues := TDictionary<string, string>.Create();
-              for var j := 0 to strings.Count - 1 do
-                dictValues.Add(strings.KeyNames[j], strings.ValueFromIndex[j]);
-              dict.Add(sections[i], dictValues);
-            end;
-          finally
-            FreeAndNil(strings);
+          // read values form each section
+          for var i := 0 to sections.Count - 1 do
+          begin
+            ini.ReadSectionValues(sections[i], strings);
+            var dictValues := TDictionary<string, string>.Create();
+            for var j := 0 to strings.Count - 1 do
+              dictValues.Add(strings.KeyNames[j], strings.ValueFromIndex[j]);
+            dict.Add(sections[i], dictValues);
           end;
         finally
-          FreeAndNil(sections);
+          FreeAndNil(strings);
         end;
       finally
-        FreeAndNil(ini);
+        FreeAndNil(sections);
       end;
+    finally
+      FreeAndNil(ini);
     end;
 
     // create result with dictionary
-    Result := TAppUITranslation.Create(dict);
+    Result := TAppUITranslation.Create(languageID, dict);
   except
     FreeAndNil(dict);
     raise;
@@ -400,57 +423,70 @@ begin
 end;
 
 {------------------------------------------------------------------------------}
-{ TAppUIElement }
+{ TAppUITranslationApi }
 {------------------------------------------------------------------------------}
 
 /// <summary> Constructor </summary>
-constructor TAppUIElement.Create(
-  const ASection: string;
-  const AId     : string;
-  const AText   : string);
+constructor TAppUITranslationApi.Create(
+  const AFileFinder: IAppUILanguageFileFinder;
+  const ALoader    : IAppUITranslationLoader);
 begin
   inherited Create();
 
-  FSection := ASection;
-  FId      := AId;
-  FText    := AText;
+  if (not Assigned(AFileFinder)) then
+    raise EArgumentNilException.Create('AFileFinder');
+  if (not Assigned(ALoader)) then
+    raise EArgumentNilException.Create('ALoader');
+
+  FLoader      := ALoader;
+  FLangFiles   := AFileFinder.Find();
+  FTranslation := TAppUITranslationDefault.Create(0);
 end;
 
-function TAppUIElement.GetSection(): string;
+/// <summary> Destructor </summary>
+destructor TAppUITranslationApi.Destroy();
 begin
-  Result := FSection;
+  SetLength(FLangFiles, 0);
+
+  inherited Destroy();
 end;
 
-function TAppUIElement.GetId(): string;
+/// <summary> Get list of available languages for translating the App UI </summary>
+function TAppUITranslationApi.GetLanguages(): TArray<IAppUILanguageFile>;
 begin
-  Result := FId;
+  Result := FLangFiles;
 end;
 
-function TAppUIElement.GetText(): string;
+/// <summary> Get current App UI translation </summary>
+function TAppUITranslationApi.GetTranslation(): IAppUITranslation;
 begin
-  Result := FText;
+  Result := FTranslation;
 end;
 
-procedure TAppUIElement.SetText(const value: string);
+/// <summary> Set App UI translation by language identifier </summary>
+procedure TAppUITranslationApi.SetLanguage(
+  const ALanguageID: integer);
 begin
-  FText := value;
+  if (FTranslation.LanguageID <> ALanguageID) then
+    for var langFile in FLangFiles do
+      if (langFile.LanguageID = ALanguageID) then
+      begin
+        FTranslation := FLoader.LoadFromFile(langFile.FullPath);
+        Break;
+      end;
 end;
 
 {------------------------------------------------------------------------------}
-{ TAppUITranslator }
+{ TAppUITranslationApiFactory }
 {------------------------------------------------------------------------------}
 
-/// <summary> Translate App UI </summary>
-procedure TAppUITranslator.Translate(
-  const AView       : IAppUIView;
-  const ATranslation: IAppUITranslation);
+/// <summary> Create instance of App UI translation API </summary>
+function TAppUITranslationApiFactory.CreateApi(): IAppUITranslationApi;
 begin
-  for var element in AView.Elements do
-  begin
-    var text := ATranslation.GetText(element.Section, element.Id);
-    if (text.Length >= 0) then
-      element.Text := text;
-  end;
+  var fileFinder: IAppUILanguageFileFinder := TAppUILanguageFileFinder.Create();
+  var fileLoader: IAppUITranslationLoader  := TAppUITranslationLoader.Create();
+
+  Result := TAppUITranslationApi.Create(fileFinder, fileLoader);
 end;
 
 end.
