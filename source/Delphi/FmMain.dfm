@@ -13,8 +13,8 @@ object Fm_Example: TFm_Example
   Menu = MainMenu1
   OldCreateOrder = False
   Position = poScreenCenter
+  ShowHint = True
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13

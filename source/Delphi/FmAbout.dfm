@@ -13,8 +13,6 @@ object Fm_About: TFm_About
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
-  OnCreate = FormCreate
-  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Btn_Close: TButton

@@ -29,7 +29,7 @@ type
   /// <summary>
   /// Example main form
   /// </summary>
-  TFm_Example = class(TForm, IAppUIView)
+  TFm_Example = class(TForm)
     MainMenu1: TMainMenu;
     MI_File: TMenuItem;
     MI_Options: TMenuItem;
@@ -76,7 +76,6 @@ type
     Btn_Print: TButton;
     {}
     procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure MI_LanguageClick(Sender: TObject);
     {}
@@ -89,13 +88,8 @@ type
     procedure Act_ContentsExecute(Sender: TObject);
     procedure Act_AboutExecute(Sender: TObject);
   strict private
-    FElements     : TList<IAppUIElement>;
-    FLangFiles    : TArray<IAppUITranslationFile>;
-    FUITranslation: IAppUITranslation;
-  private
-    {$REGION ' IAppUIView '}
-    function GetElements(): TArray<IAppUIElement>;
-    {$ENDREGION}
+    /// <summary> App UI translation API </summary>
+    FUITranslationApi: IAppUITranslationApi;
   public
     procedure Translate(
       const AUITranslation: IAppUITranslation);
@@ -114,31 +108,20 @@ procedure TFm_Example.FormCreate(Sender: TObject);
 begin
   inherited;
 
-  FElements      := TList<IAppUIElement>.Create();
-  FUITranslation := TAppUITranslationDefault.Create();
-end;
-
-procedure TFm_Example.FormDestroy(Sender: TObject);
-begin
-  FreeAndNil(FElements);
-  SetLength(FLangFiles, 0);
-
-  inherited;
+  var factory: IAppUITranslationApiFactory := TAppUITranslationApiFactory.Create();
+  FUITranslationApi := factory.CreateApi();
 end;
 
 procedure TFm_Example.FormShow(Sender: TObject);
 begin
-  var finder: IAppUITranslationFileFinder := TAppUITranslationFileFinder.Create();
-  FLangFiles := finder.Find(ExtractFilePath(ParamStr(0)) + '\Languages', '*.lng');
-
   // create menu items with languages
-  for var langFile in FLangFiles do
+  for var language in FUITranslationApi.Languages do
   begin
     var menuItem := TMenuItem.Create(nil);
     menuItem.OnClick := MI_LanguageClick;
-    menuItem.Caption := langFile.LanguageName;
-    menuItem.Tag     := langFile.LanguageID;
-    if (langFile.LanguageID = 1033) then
+    menuItem.Caption := language.LanguageName;
+    menuItem.Tag     := language.LanguageID;
+    if (language.LanguageID = 1033) then
       menuItem.Click();
     MI_Language.Add(menuItem);
   end;
@@ -156,12 +139,11 @@ begin
       TMenuItem(Sender).Checked := True;
 
       // apply the selected language to the user interface
-      for var langFile in FLangFiles do
-        if (langFile.LanguageID = TMenuItem(Sender).Tag) then
+      for var language in FUITranslationApi.Languages do
+        if (language.LanguageID = TMenuItem(Sender).Tag) then
         begin
-          var reader: IAppUITranslationReader := TAppUITranslationReader.Create(langFile.FullPath);
-          FUITranslation := reader.Read();
-          Translate(FUITranslation);
+          FUITranslationApi.SetLanguage(language.LanguageID);
+          Translate(FUITranslationApi.Translation);
           Break;
         end;
     end;
@@ -207,59 +189,57 @@ procedure TFm_Example.Act_AboutExecute(Sender: TObject);
 begin
   var Fm := TFm_About.Create(nil);
   try
-    Fm.Translate(FUITranslation);
+    Fm.Translate(FUITranslationApi.Translation);
     Fm.ShowModal();
   finally
     FreeAndNil(Fm);
   end;
 end;
 
-{$REGION ' IAppUIView '}
-function TFm_Example.GetElements: TArray<IAppUIElement>;
-begin
-  Result := FElements.ToArray();
-end;
-{$ENDREGION}
-
 procedure TFm_Example.Translate(
   const AUITranslation: IAppUITranslation);
 begin
-  var s := 'Main';
-  Self              .Caption := AUITranslation.GetText(s, '0', Self.Caption);
-  {}
-  MI_File           .Caption := AUITranslation.GetText(s, '100', MI_File.Caption);
-  MI_Options        .Caption := AUITranslation.GetText(s, '200', MI_Options.Caption);
-  MI_Help           .Caption := AUITranslation.GetText(s, '300', MI_Help.Caption);
-  {}
-  Act_New           .Caption := AUITranslation.GetText(s, '110', Act_New.Caption);
-  Act_New           .Hint    := AUITranslation.GetText(s, '111', Act_New.Hint);
-  Act_Open          .Caption := AUITranslation.GetText(s, '120', Act_Open.Caption);
-  Act_Open          .Hint    := AUITranslation.GetText(s, '121', Act_Open.Hint);
-  Act_Save          .Caption := AUITranslation.GetText(s, '130', Act_Save.Caption);
-  Act_Save          .Hint    := AUITranslation.GetText(s, '131', Act_Save.Hint);
-  Act_Exit          .Caption := AUITranslation.GetText(s, '150', Act_Exit.Caption);
-  Act_Exit          .Hint    := AUITranslation.GetText(s, '151', Act_Exit.Hint);
-  Act_Configuration .Caption := AUITranslation.GetText(s, '210', Act_Configuration.Caption);
-  Act_Configuration .Hint    := AUITranslation.GetText(s, '211', Act_Configuration.Hint);
-  Act_Language      .Caption := AUITranslation.GetText(s, '220', Act_Language.Caption);
-  Act_Language      .Hint    := AUITranslation.GetText(s, '221', Act_Language.Hint);
-  Act_Contents      .Caption := AUITranslation.GetText(s, '310', Act_Contents.Caption);
-  Act_Contents      .Hint    := AUITranslation.GetText(s, '311', Act_Contents.Hint);
-  Act_About         .Caption := AUITranslation.GetText(s, '320', Act_About.Caption);
-  Act_About         .Hint    := AUITranslation.GetText(s, '321', Act_About.Hint);
-  {}
-  GBox_Customer         .Caption := AUITranslation.GetText(s, '1101', GBox_Customer.Hint);
-  Lbl_CustomerFirstName .Caption := AUITranslation.GetText(s, '1102', Lbl_CustomerFirstName.Hint);
-  Lbl_CustomerLastName  .Caption := AUITranslation.GetText(s, '1103', Lbl_CustomerLastName.Hint);
-  Lbl_CustomerPhone     .Caption := AUITranslation.GetText(s, '1104', Lbl_CustomerPhone.Hint);
-  Lbl_CustomerEmail     .Caption := AUITranslation.GetText(s, '1105', Lbl_CustomerEmail.Hint);
-  GBox_Order            .Caption := AUITranslation.GetText(s, '1201', GBox_Order.Hint);
-  Lbl_OrderNumber       .Caption := AUITranslation.GetText(s, '1202', Lbl_OrderNumber.Hint);
-  Lbl_OrderDate         .Caption := AUITranslation.GetText(s, '1203', Lbl_OrderDate.Hint);
-  Lbl_OrderCost         .Caption := AUITranslation.GetText(s, '1204', Lbl_OrderCost.Hint);
-  Lbl_OrderComment      .Caption := AUITranslation.GetText(s, '1205', Lbl_OrderComment.Hint);
-  Btn_Preview           .Caption := AUITranslation.GetText(s, '1301', Btn_Preview.Hint);
-  Btn_Print             .Caption := AUITranslation.GetText(s, '1401', Btn_Print.Hint);
+  if (AUITranslation.LanguageID > 0) then
+  begin
+    var s := 'Main';
+    Self              .Caption := AUITranslation.GetText(s, '0', Self.Caption);
+    {}
+    MI_File           .Caption := AUITranslation.GetText(s, '100', MI_File.Caption);
+    MI_Options        .Caption := AUITranslation.GetText(s, '200', MI_Options.Caption);
+    MI_Help           .Caption := AUITranslation.GetText(s, '300', MI_Help.Caption);
+    {}
+    Act_New           .Caption := AUITranslation.GetText(s, '110', Act_New.Caption);
+    Act_New           .Hint    := AUITranslation.GetText(s, '111', Act_New.Hint);
+    Act_Open          .Caption := AUITranslation.GetText(s, '120', Act_Open.Caption);
+    Act_Open          .Hint    := AUITranslation.GetText(s, '121', Act_Open.Hint);
+    Act_Save          .Caption := AUITranslation.GetText(s, '130', Act_Save.Caption);
+    Act_Save          .Hint    := AUITranslation.GetText(s, '131', Act_Save.Hint);
+    Act_Exit          .Caption := AUITranslation.GetText(s, '150', Act_Exit.Caption);
+    Act_Exit          .Hint    := AUITranslation.GetText(s, '151', Act_Exit.Hint);
+    Act_Configuration .Caption := AUITranslation.GetText(s, '210', Act_Configuration.Caption);
+    Act_Configuration .Hint    := AUITranslation.GetText(s, '211', Act_Configuration.Hint);
+    Act_Language      .Caption := AUITranslation.GetText(s, '220', Act_Language.Caption);
+    Act_Language      .Hint    := AUITranslation.GetText(s, '221', Act_Language.Hint);
+    Act_Contents      .Caption := AUITranslation.GetText(s, '310', Act_Contents.Caption);
+    Act_Contents      .Hint    := AUITranslation.GetText(s, '311', Act_Contents.Hint);
+    Act_About         .Caption := AUITranslation.GetText(s, '320', Act_About.Caption);
+    Act_About         .Hint    := AUITranslation.GetText(s, '321', Act_About.Hint);
+    {}
+    GBox_Customer         .Caption := AUITranslation.GetText(s, '1100', GBox_Customer.Hint);
+    Lbl_CustomerFirstName .Caption := AUITranslation.GetText(s, '1101', Lbl_CustomerFirstName.Hint);
+    Lbl_CustomerLastName  .Caption := AUITranslation.GetText(s, '1102', Lbl_CustomerLastName.Hint);
+    Lbl_CustomerPhone     .Caption := AUITranslation.GetText(s, '1103', Lbl_CustomerPhone.Hint);
+    Lbl_CustomerEmail     .Caption := AUITranslation.GetText(s, '1104', Lbl_CustomerEmail.Hint);
+    GBox_Order            .Caption := AUITranslation.GetText(s, '1200', GBox_Order.Hint);
+    Lbl_OrderNumber       .Caption := AUITranslation.GetText(s, '1201', Lbl_OrderNumber.Hint);
+    Lbl_OrderDate         .Caption := AUITranslation.GetText(s, '1202', Lbl_OrderDate.Hint);
+    Lbl_OrderCost         .Caption := AUITranslation.GetText(s, '1203', Lbl_OrderCost.Hint);
+    Lbl_OrderComment      .Caption := AUITranslation.GetText(s, '1204', Lbl_OrderComment.Hint);
+    Btn_Preview           .Caption := AUITranslation.GetText(s, '1301', Btn_Preview.Hint);
+    Btn_Preview           .Hint    := AUITranslation.GetText(s, '1302', Btn_Preview.Hint);
+    Btn_Print             .Caption := AUITranslation.GetText(s, '1401', Btn_Print.Hint);
+    Btn_Print             .Hint    := AUITranslation.GetText(s, '1402', Btn_Print.Hint);
+  end;
 end;
 
 end.
