@@ -22,8 +22,11 @@ type
     /// <summary> Full path to language file </summary>
     FFullPath: string;
   public
+    /// <summary> Get language identifier </summary>
     function GetLanguageID(): integer;
+    /// <summary> Get language name </summary>
     function GetLanguageName(): string;
+    /// <summary> Get full path to language file </summary>
     function GetFullPath(): string;
   public
     /// <summary> Constructor </summary>
@@ -135,13 +138,16 @@ type
   TAppUITranslationLoader = class(TInterfacedObject, IAppUITranslationLoader)
   strict private
     /// <summary> Loads a translation from a stream </summary>
+    /// <param name="AStream"> Data stream <see cref="T:TStream"/> </param>
     function LoadTranslation(
       const AStream: TStream): IAppUITranslation;
   public
     /// <summary> Loads a translation from a file </summary>
+    /// <param name="AFileName"> Full path to the file <see cref="T:string"/> </param>
     function LoadFromFile(
       const AFileName: string): IAppUITranslation;
     /// <summary> Loads a translation from a stream </summary>
+    /// <param name="AStream"> Data stream <see cref="T:TStream"/> </param>
     function LoadFromStream(
       const AStream: TStream): IAppUITranslation;
   end;
@@ -212,16 +218,19 @@ begin
   FFullPath     := AFullPath;
 end;
 
+/// <summary> Get language identifier </summary>
 function TAppUILanguageFile.GetLanguageID(): integer;
 begin
   Result := FLanguageID;
 end;
 
+/// <summary> Get language name </summary>
 function TAppUILanguageFile.GetLanguageName(): string;
 begin
   Result := FLanguageName;
 end;
 
+/// <summary> Get full path to language file </summary>
 function TAppUILanguageFile.GetFullPath(): string;
 begin
   Result := FFullPath;

@@ -83,9 +83,11 @@ type
   IAppUITranslationLoader = interface
     ['{B6B508C4-AB7C-4FA7-A2C3-B55F4EDBA22C}']
     /// <summary> Loads a translation from a file </summary>
+    /// <param name="AFileName"> Full path to the file <see cref="T:string"/> </param>
     function LoadFromFile(
       const AFileName: string): IAppUITranslation;
     /// <summary> Loads a translation from a stream </summary>
+    /// <param name="AStream"> Data stream <see cref="T:TStream"/> </param>
     function LoadFromStream(
       const AStream: TStream): IAppUITranslation;
   end;
