@@ -152,10 +152,6 @@ type
   /// </summary>
   TAppUITranslationApi = class(TInterfacedObject, IAppUITranslationApi)
   strict private
-  const
-    /// <summary> Default language identifier </summary>
-    CDefaultLangID = 1033;
-  strict private
     /// <summary> App UI translation loader </summary>
     FLoader: IAppUITranslationLoader;
     /// <summary> List of App UI language files </summary>
